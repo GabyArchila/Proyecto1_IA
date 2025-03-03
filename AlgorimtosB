@@ -1,0 +1,606 @@
+# Librerías
+import math
+import time
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+from matplotlib.colors import ListedColormap
+import matplotlib.patches as mpatches
+
+
+# Estructura del nodo.
+class Nodo:
+    def __init__(self, estado, padre=None, costo=0, accion=None):
+        self.estado = estado
+        self.padre = padre
+        self.costo = costo
+        self.accion = accion
+        self.valor_comparacion = 0  # Para los algoritmos GBFS y A*
+
+
+# Estructura FIFO
+class FIFO:
+    def __init__(self):
+        self.cola = []
+
+    def empty(self):
+        return len(self.cola) == 0
+
+    def top(self):
+        if not self.empty():
+            return self.cola[0]
+        return None
+
+    def pop(self):
+        if not self.empty():
+            return self.cola.pop(0)
+        return None
+
+    def add(self, entrada):
+        self.cola.append(entrada)
+
+
+# Estructura LIFO
+class LIFO:
+    def __init__(self):
+        self.cola = []
+
+    def empty(self):
+        return len(self.cola) == 0
+
+    def top(self):
+        if not self.empty():
+            return self.cola[-1]
+        return None
+
+    def pop(self):
+        if not self.empty():
+            return self.cola.pop()
+        return None
+
+    def add(self, entrada):
+        self.cola.append(entrada)
+
+
+# Estructura PRIORITY
+class PRIORITY:
+    def __init__(self):
+        self.cola = []
+
+    def empty(self):
+        return len(self.cola) == 0
+
+    def top(self):
+        if not self.empty():
+            return self.cola[0]
+        return None
+
+    def pop(self):
+        if not self.empty():
+            min_idx = 0
+            for i in range(1, len(self.cola)):
+                if self.cola[i].valor_comparacion < self.cola[min_idx].valor_comparacion:
+                    min_idx = i
+            return self.cola.pop(min_idx)
+        return None
+
+    def add(self, entrada):
+        self.cola.append(entrada)
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# Breadth-first search
+def BFS(inicio, final):
+    nodo_inicial = Nodo(inicio)
+    frontera = FIFO()
+    frontera.add(nodo_inicial)
+    explorados = set()
+    nodos_explorados = 0
+    niveles = {}
+    niveles[0] = 1
+
+    while not frontera.empty():
+        nodo_actual = frontera.pop()
+        estado_actual = nodo_actual.estado
+        nodos_explorados += 1
+
+        if estado_actual == final:
+            return nodo_actual, nodos_explorados, niveles
+
+        if estado_actual not in explorados:
+            explorados.add(estado_actual)
+            nivel_actual = nodo_actual.costo
+            for vecino in grafo[estado_actual]:
+                if vecino not in explorados:
+                    nuevo_nodo = Nodo(vecino, nodo_actual, nivel_actual + 1)
+                    frontera.add(nuevo_nodo)
+                    if (nivel_actual + 1) not in niveles:
+                        niveles[nivel_actual + 1] = 0
+                    niveles[nivel_actual + 1] += 1
+
+    return None, nodos_explorados, niveles  # Si no se encuentra solución
+
+
+# Algoritmo Depth-first search
+def DFS(inicio, final):
+    nodo_inicial = Nodo(inicio)
+    frontera = LIFO()
+    frontera.add(nodo_inicial)
+    explorados = set()
+    nodos_explorados = 0
+    niveles = {}
+    niveles[0] = 1
+
+    while not frontera.empty():
+        nodo_actual = frontera.pop()
+        estado_actual = nodo_actual.estado
+        nodos_explorados += 1
+
+        if estado_actual == final:
+            return nodo_actual, nodos_explorados, niveles
+
+        if estado_actual not in explorados:
+            explorados.add(estado_actual)
+            nivel_actual = nodo_actual.costo
+            for vecino in grafo[estado_actual]:
+                if vecino not in explorados:
+                    nuevo_nodo = Nodo(vecino, nodo_actual, nivel_actual + 1)
+                    frontera.add(nuevo_nodo)
+                    if (nivel_actual + 1) not in niveles:
+                        niveles[nivel_actual + 1] = 0
+                    niveles[nivel_actual + 1] += 1
+
+    return None, nodos_explorados, niveles  # Si no se encuentra solución
+
+
+# Algoritmo Greedy Best-first search
+def GBFS(inicio, final, h):
+    nodo_inicial = Nodo(inicio)
+    nodo_inicial.valor_comparacion = h[inicio]
+    frontera = PRIORITY()
+    frontera.add(nodo_inicial)
+    explorados = set()
+    nodos_explorados = 0
+    niveles = {}
+    niveles[0] = 1
+
+    while not frontera.empty():
+        nodo_actual = frontera.pop()
+        estado_actual = nodo_actual.estado
+        nodos_explorados += 1
+
+        if estado_actual == final:
+            return nodo_actual, nodos_explorados, niveles
+
+        if estado_actual not in explorados:
+            explorados.add(estado_actual)
+            nivel_actual = nodo_actual.costo
+            for vecino in grafo[estado_actual]:
+                if vecino not in explorados:
+                    nuevo_nodo = Nodo(vecino, nodo_actual, nivel_actual + 1)
+                    nuevo_nodo.valor_comparacion = h[vecino]
+                    frontera.add(nuevo_nodo)
+                    if (nivel_actual + 1) not in niveles:
+                        niveles[nivel_actual + 1] = 0
+                    niveles[nivel_actual + 1] += 1
+
+    return None, nodos_explorados, niveles  # Si no se encuentra solución
+
+
+# Algoritmo A*
+def A_estrella(inicio, final, h):
+    nodo_inicial = Nodo(inicio)
+    nodo_inicial.valor_comparacion = h[inicio]  # f(n) = g(n) + h(n)
+    frontera = PRIORITY()
+    frontera.add(nodo_inicial)
+    explorados = {}
+    nodos_explorados = 0
+    niveles = {}
+    niveles[0] = 1
+
+    while not frontera.empty():
+        nodo_actual = frontera.pop()
+        estado_actual = nodo_actual.estado
+        costo_actual = nodo_actual.costo
+        nodos_explorados += 1
+
+        if estado_actual == final:
+            return nodo_actual, nodos_explorados, niveles
+
+        if estado_actual in explorados and explorados[estado_actual] <= costo_actual:
+            continue
+
+        explorados[estado_actual] = costo_actual
+
+        for vecino in grafo[estado_actual]:
+            nuevo_costo = costo_actual + 1
+
+            if vecino not in explorados or nuevo_costo < explorados[vecino]:
+                nuevo_nodo = Nodo(vecino, nodo_actual, nuevo_costo)
+                nuevo_nodo.valor_comparacion = nuevo_costo + h[vecino]  # f(n) = g(n) + h(n)
+                frontera.add(nuevo_nodo)
+                nivel_actual = nuevo_nodo.costo
+                if nivel_actual not in niveles:
+                    niveles[nivel_actual] = 0
+                niveles[nivel_actual] += 1
+
+    return None, nodos_explorados, niveles  # Si no se encuentra solución
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# Laberinto
+def leer_laberinto(archivo):
+    laberinto = []
+    with open(archivo, 'r') as f:
+        for linea in f:
+            fila = []
+            for caracter in linea.strip():
+                if caracter in ['0', '1', '2', '3']:
+                    fila.append(int(caracter))
+            if fila:
+                laberinto.append(fila)
+    return laberinto
+
+
+def laberinto_a_grafo(laberinto):
+    grafo = {}
+    filas = len(laberinto)
+    columnas = len(laberinto[0]) if filas > 0 else 0
+
+    # Movimientos: Arriba, Derecha, Abajo, Izquierda
+    movimientos = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+
+    for i in range(filas):
+        for j in range(columnas):
+            if laberinto[i][j] != 1:
+                grafo[(i, j)] = []
+                for di, dj in movimientos:
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < filas and 0 <= nj < columnas and laberinto[ni][nj] != 1:
+                        grafo[(i, j)].append((ni, nj))
+
+    return grafo
+
+
+def encontrar_p(laberinto):
+    inicio = None
+    final = None
+    for i in range(len(laberinto)):
+        for j in range(len(laberinto[i])):
+            if laberinto[i][j] == 2:
+                inicio = (i, j)
+            elif laberinto[i][j] == 3:
+                final = (i, j)
+    return inicio, final
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# Distancia Euclidiana
+def distancia_euclidiana(a, b):
+    E = math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+    return E
+
+
+# Distancia Manhattan
+def distancia_manhattan(a, b):
+    M = abs(a[0] - b[0]) + abs(a[1] - b[1])
+    return M
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# Solución del laberinto
+def sol_laberinto(nodo_final):
+    camino = []
+    nodo_actual = nodo_final
+    while nodo_actual:
+        camino.append(nodo_actual.estado)
+        nodo_actual = nodo_actual.padre
+    return camino[::-1]
+
+
+# Visualización de la solución del laberinto
+def visualizar_laberinto(laberinto, camino=None, titulo="Laberinto"):
+    matriz = np.array([fila[:] for fila in laberinto], dtype=float)  # Matriz para visualización
+
+    # 0-->camino libre-->silver, 1-->pared-->seagreen, 2-->inicio-->red, 3-->final-->gold, 4-->camino encontrado-->mediumpurple
+    colores = ListedColormap(['silver', 'seagreen', 'red', 'gold', 'mediumpurple'])
+
+    # Marcar el camino
+    if camino:
+        for i, j in camino:
+            if matriz[i][j] == 0:
+                matriz[i][j] = 4
+
+    plt.figure(figsize=(8, 8))
+    plt.pcolormesh(matriz.T, cmap=colores, edgecolors='lightgray', linewidth=0.5)
+
+    patches = [
+        mpatches.Patch(color='silver', label='Espacio libre'),
+        mpatches.Patch(color='seagreen', label='Pared'),
+        mpatches.Patch(color='red', label='Inicio'),
+        mpatches.Patch(color='gold', label='Final'),
+        mpatches.Patch(color='mediumpurple', label='Camino')
+    ]
+    plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plt.title(titulo)
+    plt.grid(True, linewidth=0.5, color='lightgray', linestyle='-')
+    plt.gca().set_aspect('equal')
+    plt.gca().invert_yaxis()  # Invertir el eje y para que 0,0 esté en la esquina superior izquierda
+    plt.tight_layout()
+    plt.savefig(f"{titulo.replace(' ', '_')}.png")
+    plt.show()
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# Rendimiento de los algoritmos
+def medir_rendimiento(algoritmo, inicio, final, laberinto, h=None, nombre_algoritmo=""):
+    start_time = time.perf_counter()  # perf_counter para mayor precisión
+    if h:
+        nodo_final, nodos_explorados, niveles = algoritmo(inicio, final, h)
+    else:
+        nodo_final, nodos_explorados, niveles = algoritmo(inicio, final)
+    tiempo_ejecucion = time.perf_counter() - start_time
+
+    # Si no hay solución
+    if nodo_final is None:
+        print(f"No se encontró solución con {nombre_algoritmo}")
+        return 0, nodos_explorados, round(tiempo_ejecucion, 7), 0
+
+    camino = sol_laberinto(nodo_final)
+    print(f"\nCamino encontrado con {nombre_algoritmo}:")
+    visualizar_laberinto(laberinto, camino, f"Solución usando {nombre_algoritmo}")
+
+    # longitud del camino
+    longitud_camino = len(camino) - 1
+
+    # Para el branching factor
+    total_nodos = sum(niveles.values())
+    total_niveles = len(niveles)
+    branching_factor = total_nodos / total_niveles if total_niveles > 0 else 0
+
+    tiempo_ejecucion_redondeado = round(tiempo_ejecucion, 7)
+
+    return longitud_camino, nodos_explorados, tiempo_ejecucion_redondeado, branching_factor
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# NUEVA FUNCIÓN: Generar punto de partida aleatorio
+def generar_punto_partida_aleatorio(laberinto, punto_final):
+    filas = len(laberinto)
+    columnas = len(laberinto[0]) if filas > 0 else 0
+
+    # Lista para almacenar posibles puntos de partida (espacios libres)
+    puntos_posibles = []
+
+    for i in range(filas):
+        for j in range(columnas):
+            # Consideramos espacios libres (0) como posibles puntos de partida
+            if laberinto[i][j] == 0:
+                puntos_posibles.append((i, j))
+
+    # Seleccionamos un punto aleatorio de la lista
+    if puntos_posibles:
+        return random.choice(puntos_posibles)
+    else:
+        return None  # En caso de que no haya espacios libres (poco probable)
+
+
+# NUEVA FUNCIÓN: Modificar laberinto para la simulación
+def modificar_laberinto_para_simulacion(laberinto_original, nuevo_inicio):
+    # Creamos una copia profunda del laberinto
+    laberinto_modificado = [fila[:] for fila in laberinto_original]
+
+    # Buscar y modificar el punto de inicio original (2) a espacio libre (0)
+    for i in range(len(laberinto_modificado)):
+        for j in range(len(laberinto_modificado[i])):
+            if laberinto_modificado[i][j] == 2:
+                laberinto_modificado[i][j] = 0
+
+    # Establecer el nuevo punto de inicio
+    i, j = nuevo_inicio
+    laberinto_modificado[i][j] = 2
+
+    return laberinto_modificado
+
+
+# NUEVA FUNCIÓN: Simulación con puntos de partida aleatorios
+def simular_puntos_partida_aleatorios(archivo_laberinto, num_simulaciones=2):
+    print(f"\n\n{'=' * 50}")
+    print(f"SIMULACIÓN CON {num_simulaciones} PUNTOS DE PARTIDA ALEATORIOS")
+    print(f"{'=' * 50}\n")
+
+    # Leer el laberinto original
+    laberinto_original = leer_laberinto(archivo_laberinto)
+    _, punto_final = encontrar_p(laberinto_original)
+
+    # Para cada simulación
+    for sim in range(num_simulaciones):
+        print(f"\n{'=' * 50}")
+        print(f"SIMULACIÓN #{sim + 1}")
+        print(f"{'=' * 50}")
+
+        # Generar un punto de partida aleatorio
+        nuevo_inicio = generar_punto_partida_aleatorio(laberinto_original, punto_final)
+
+        if nuevo_inicio is None:
+            print("No se pudo generar un punto de partida aleatorio válido.")
+            continue
+
+        # Modificar el laberinto con el nuevo punto de partida
+        laberinto_modificado = modificar_laberinto_para_simulacion(laberinto_original, nuevo_inicio)
+
+        # Crear grafo del laberinto modificado
+        global grafo
+        grafo = laberinto_a_grafo(laberinto_modificado)
+
+        inicio, final = encontrar_p(laberinto_modificado)
+
+        print(f"Punto de inicio aleatorio: {inicio}, Punto final: {final}")
+        print("\nLaberinto con punto de partida aleatorio:")
+        visualizar_laberinto(laberinto_modificado, titulo=f"Laberinto Simulación #{sim + 1}")
+
+        # Calcular distancia del punto de inicio al final
+        distancia_eucl = distancia_euclidiana(inicio, final)
+        distancia_manh = distancia_manhattan(inicio, final)
+        print(f"Distancia Euclidiana al objetivo: {distancia_eucl:.2f}")
+        print(f"Distancia Manhattan al objetivo: {distancia_manh:.2f}")
+
+        # Heurísticas
+        h_manhattan = {nodo: distancia_manhattan(nodo, final) for nodo in grafo}
+        h_euclidiana = {nodo: distancia_euclidiana(nodo, final) for nodo in grafo}
+
+        # Tabla para comparar resultados
+        resultados = []
+
+        print("\n Algoritmo BFS...")
+        longitud, nodos, tiempo, bf = medir_rendimiento(BFS, inicio, final, laberinto_modificado,
+                                                        nombre_algoritmo="BFS")
+        print(
+            f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+        resultados.append(["BFS", longitud, nodos, tiempo, bf])
+
+        print("\n Algoritmo DFS...")
+        longitud, nodos, tiempo, bf = medir_rendimiento(DFS, inicio, final, laberinto_modificado,
+                                                        nombre_algoritmo="DFS")
+        print(
+            f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+        resultados.append(["DFS", longitud, nodos, tiempo, bf])
+
+        print("\n Algoritmo GBFS con Manhattan...")
+        longitud, nodos, tiempo, bf = medir_rendimiento(GBFS, inicio, final, laberinto_modificado, h_manhattan,
+                                                        "GBFS con Manhattan")
+        print(
+            f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+        resultados.append(["GBFS_Manhattan", longitud, nodos, tiempo, bf])
+
+        print("\n Algoritmo GBFS con Euclidiana...")
+        longitud, nodos, tiempo, bf = medir_rendimiento(GBFS, inicio, final, laberinto_modificado, h_euclidiana,
+                                                        "GBFS con Euclidiana")
+        print(
+            f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+        resultados.append(["GBFS_Euclidiana", longitud, nodos, tiempo, bf])
+
+        print("\n Algoritmo A estrella con Manhattan)...")
+        longitud, nodos, tiempo, bf = medir_rendimiento(A_estrella, inicio, final, laberinto_modificado, h_manhattan,
+                                                        "A estrella con Manhattan)")
+        print(
+            f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+        resultados.append(["A estrella_Manhattan", longitud, nodos, tiempo, bf])
+
+        print("\n Algoritmo A estrella con Euclidiana)...")
+        longitud, nodos, tiempo, bf = medir_rendimiento(A_estrella, inicio, final, laberinto_modificado, h_euclidiana,
+                                                        "A estrella con Euclidiana")
+        print(
+            f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+        resultados.append(["A estrella_Euclidiana", longitud, nodos, tiempo, bf])
+
+        # Tabla comparativa para esta simulación
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.axis('tight')
+        ax.axis('off')
+        tabla = ax.table(cellText=[[r[0], r[1], r[2], r[3], r[4]] for r in resultados],
+                         colLabels=["Algoritmo", "Longitud", "Nodos explorados", "Tiempo (s)", "Branching Factor"],
+                         loc='center',
+                         cellLoc='center')
+        tabla.auto_set_font_size(False)
+        tabla.set_fontsize(10)
+        tabla.scale(1.2, 1.5)
+        plt.title(f"Comparación de Algoritmos - Simulación #{sim + 1}")
+        plt.tight_layout()
+        plt.savefig(f"Comparacion_Algoritmos_Simulacion_{sim + 1}.png")
+        plt.show()
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# Resultados
+def mostrar_resultados(archivo_laberinto):
+    global grafo
+
+    laberinto = leer_laberinto(archivo_laberinto)
+    grafo = laberinto_a_grafo(laberinto)
+    inicio, final = encontrar_p(laberinto)
+
+    print(f"Punto de inicio: {inicio}, Punto final: {final}")
+    print("\nLaberinto original:")
+    visualizar_laberinto(laberinto, titulo="Laberinto Original")
+
+    # Heurísticas
+    h_manhattan = {nodo: distancia_manhattan(nodo, final) for nodo in grafo}
+    h_euclidiana = {nodo: distancia_euclidiana(nodo, final) for nodo in grafo}
+
+    # tabla para comparar resultados
+    resultados = []
+
+    print("\n Algoritmo BFS...")
+    longitud, nodos, tiempo, bf = medir_rendimiento(BFS, inicio, final, laberinto, nombre_algoritmo="BFS")
+    print(
+        f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+    resultados.append(["BFS", longitud, nodos, tiempo, bf])
+
+    print("\n Algoritmo DFS...")
+    longitud, nodos, tiempo, bf = medir_rendimiento(DFS, inicio, final, laberinto, nombre_algoritmo="DFS")
+    print(
+        f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+    resultados.append(["DFS", longitud, nodos, tiempo, bf])
+
+    print("\n Algoritmo GBFS con Manhattan...")
+    longitud, nodos, tiempo, bf = medir_rendimiento(GBFS, inicio, final, laberinto, h_manhattan, "GBFS con Manhattan")
+    print(
+        f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+    resultados.append(["GBFS_Manhattan", longitud, nodos, tiempo, bf])
+
+    print("\n Algoritmo GBFS con Euclidiana...")
+    longitud, nodos, tiempo, bf = medir_rendimiento(GBFS, inicio, final, laberinto, h_euclidiana, "GBFS con Euclidiana")
+    print(
+        f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+    resultados.append(["GBFS_Euclidiana", longitud, nodos, tiempo, bf])
+
+    print("\n Algoritmo A estrella con Manhattan)...")
+    longitud, nodos, tiempo, bf = medir_rendimiento(A_estrella, inicio, final, laberinto, h_manhattan,
+                                                    "A estrella con Manhattan)")
+    print(
+        f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+    resultados.append(["A estrella_Manhattan", longitud, nodos, tiempo, bf])
+
+    print("\n Algoritmo A estrella con Euclidiana)...")
+    longitud, nodos, tiempo, bf = medir_rendimiento(A_estrella, inicio, final, laberinto, h_euclidiana,
+                                                    "A estrella con Euclidiana")
+    print(
+        f"Longitud del camino: {longitud}, Nodos explorados: {nodos}, Tiempo de ejecución: {tiempo}, Branching Factor: {bf}")
+    resultados.append(["A estrella_Euclidiana", longitud, nodos, tiempo, bf])
+
+    # tabla comparativa
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.axis('tight')
+    ax.axis('off')
+    tabla = ax.table(cellText=[[r[0], r[1], r[2], r[3], r[4]] for r in resultados],
+                     colLabels=["Algoritmo", "Longitud", "Nodos explorados", "Tiempo (s)", "Branching Factor"],
+                     loc='center',
+                     cellLoc='center')
+    tabla.auto_set_font_size(False)
+    tabla.set_fontsize(10)
+    tabla.scale(1.2, 1.5)
+    plt.title("Comparación de Algoritmos")
+    plt.tight_layout()
+    plt.savefig("Comparacion_Algoritmos.png")
+    plt.show()
+
+    # Ejecutar simulaciones con puntos de partida aleatorios
+    simular_puntos_partida_aleatorios(archivo_laberinto, num_simulaciones=2)
+
+
+# ---------------------------------------------------------------------------------
+if __name__ == "__main__":
+    try:
+        archivo_laberinto = "Laberinto1.txt"
+        mostrar_resultados(archivo_laberinto)
+    except Exception as e:
+        print(f"Error: {e}")
