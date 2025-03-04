@@ -198,7 +198,7 @@ def A_estrella(inicio, final, h):
     nodo_inicial.valor_comparacion = h[inicio]  # f(n) = g(n) + h(n)
     frontera = PRIORITY()
     frontera.add(nodo_inicial)
-    explorados = {}
+    explorados = {} 
     nodos_explorados = 0
     niveles = {}
     niveles[0] = 1
@@ -207,27 +207,25 @@ def A_estrella(inicio, final, h):
         nodo_actual = frontera.pop()
         estado_actual = nodo_actual.estado
         costo_actual = nodo_actual.costo
-        nodos_explorados += 1
 
-        if estado_actual == final:
-            return nodo_actual, nodos_explorados, niveles
+        if estado_actual not in explorados or costo_actual < explorados[estado_actual]:
+            nodos_explorados += 1 
+            explorados[estado_actual] = costo_actual 
 
-        if estado_actual in explorados and explorados[estado_actual] <= costo_actual:
-            continue
+            if estado_actual == final:
+                return nodo_actual, nodos_explorados, niveles
 
-        explorados[estado_actual] = costo_actual
+            for vecino in grafo[estado_actual]:
+                nuevo_costo = costo_actual + 1  
 
-        for vecino in grafo[estado_actual]:
-            nuevo_costo = costo_actual + 1
-
-            if vecino not in explorados or nuevo_costo < explorados[vecino]:
-                nuevo_nodo = Nodo(vecino, nodo_actual, nuevo_costo)
-                nuevo_nodo.valor_comparacion = nuevo_costo + h[vecino]  # f(n) = g(n) + h(n)
-                frontera.add(nuevo_nodo)
-                nivel_actual = nuevo_nodo.costo
-                if nivel_actual not in niveles:
-                    niveles[nivel_actual] = 0
-                niveles[nivel_actual] += 1
+                if vecino not in explorados or nuevo_costo < explorados[vecino]:
+                    nuevo_nodo = Nodo(vecino, nodo_actual, nuevo_costo)
+                    nuevo_nodo.valor_comparacion = nuevo_costo + h[vecino]  # f(n) = g(n) + h(n)
+                    frontera.add(nuevo_nodo)
+                    nivel_actual = nuevo_nodo.costo
+                    if nivel_actual not in niveles:
+                        niveles[nivel_actual] = 0
+                    niveles[nivel_actual] += 1
 
     return None, nodos_explorados, niveles  # Si no se encuentra solución
 
@@ -604,7 +602,7 @@ def mostrar_resultados(archivo_laberinto):
 # ---------------------------------------------------------------------------------
 if __name__ == "__main__":
     try:
-        archivo_laberinto = "Laberinto1-3.txt"
+        archivo_laberinto = "Laberinto2-3.txt"
         mostrar_resultados(archivo_laberinto)
     except Exception as e:
         print(f"Error: {e}")
